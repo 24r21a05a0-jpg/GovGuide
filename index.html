@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GovGuide | Government Opportunities</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f7fc;
+      color: #17345c;
+    }
+    header {
+      background: #103b76;
+      color: white;
+      padding: 20px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    header h1 { margin: 0; }
+    nav a {
+      color: white;
+      margin-left: 18px;
+      text-decoration: none;
+    }
+    .hero {
+      text-align: center;
+      padding: 55px 20px 35px;
+      background: linear-gradient(135deg, #dcecff, #f7fbff);
+    }
+    .hero h2 { font-size: clamp(28px, 4vw, 42px); margin: 0 0 12px; }
+    .hero p { color: #536985; }
+    .search {
+      display: flex;
+      gap: 8px;
+      max-width: 650px;
+      margin: 25px auto 0;
+    }
+    input, button {
+      font: inherit;
+      padding: 13px;
+      border-radius: 8px;
+    }
+    input { border: 1px solid #cbd7e6; min-width: 0; }
+    .search input { flex: 1; }
+    button {
+      border: 0;
+      background: #1769d2;
+      color: white;
+      cursor: pointer;
+    }
+    main { max-width: 1100px; margin: 35px auto; padding: 0 20px; }
+    .section-title { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    #status { color: #536985; }
+    #opportunities {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e0e8f2;
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 5px 18px #17345c0c;
+    }
+    .tag {
+      display: inline-block;
+      background: #e1efff;
+      color: #1453a0;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .card h3 { margin-bottom: 8px; }
+    .card p { color: #536985; line-height: 1.5; }
+    .card a { color: #1769d2; font-weight: bold; }
+    footer { text-align: center; padding: 25px; color: #64758a; }
+    @media (max-width: 520px) {
+      header { padding: 18px; }
+      nav a { margin-left: 0; margin-right: 12px; }
+      .search { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GovGuide</h1>
+    <nav>
+      <a href="./index.html">Home</a>
+      <a href="./profile.html">Profile</a>
+      <a href="./admin.html">Admin</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h2>Find Government Opportunities for You</h2>
+    <p>Explore jobs, exams, scholarships and government schemes in one place.</p>
+    <div class="search">
+      <input id="searchInput" type="search" placeholder="Search jobs, exams, scholarships...">
+      <button id="searchButton">Search</button>
+    </div>
+  </section>
+
+  <main>
+    <div class="section-title">
+      <h2>Government Opportunities</h2>
+      <span id="count"></span>
+    </div>
+    <p id="status">Loading opportunities...</p>
+    <div id="opportunities"></div>
+  </main>
+
+  <footer>GovGuide — Your guide to government opportunities.</footer>
+
+  <script>
+    // The website will use this API after we deploy the backend.
+    // For now, sample opportunities let us build the page.
+    const sampleOpportunities = [
+      {
+        title: "Government Job Opening",
+        type: "Job",
+        organization: "Example Government Department",
+        qualification: "Degree",
+        description: "Explore this sample government job opportunity.",
+        lastDate: "2026-12-31",
+        officialLink: ""
+      },
+      {
+        title: "Government Scholarship",
+        type: "Scholarship",
+        organization: "Example Education Department",
+        qualification: "Degree",
+        description: "Explore this sample scholarship opportunity.",
+        lastDate: "2026-11-30",
+        officialLink: ""
+      },
+      {
+        title: "Competitive Government Exam",
+        type: "Exam",
+        organization: "Example Recruitment Board",
+        qualification: "Degree",
+        description: "Prepare for this sample government examination.",
+        lastDate: "2026-12-15",
+        officialLink: ""
+      }
+    ];
+
+    const list = document.getElementById("opportunities");
+    const status = document.getElementById("status");
+    const searchInput = document.getElementById("searchInput");
+
+    function safeOfficialLink(value) {
+      try {
+        const url = new URL(value);
+        return ["https:", "http:"].includes(url.protocol) ? url.href : "";
+      } catch {
+        return "";
+      }
+    }
+
+    function render(items) {
+      list.replaceChildren();
+      document.getElementById("count").textContent =
+        items.length + " opportunit" + (items.length === 1 ? "y" : "ies");
+
+      if (!items.length) {
+        status.textContent = "No matching opportunities found. Try another search.";
+        return;
+      }
+
+      status.textContent = "";
+
+      items.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = item.type || "Opportunity";
+
+        const title = document.createElement("h3");
+        title.textContent = item.title || "Untitled opportunity";
+
+        const organization = document.createElement("p");
+        organization.textContent = "Organization: " + (item.organization || "Not specified");
+
+        const description = document.createElement("p");
+        description.textContent = item.description || "See the official notice for details.";
+
+        const deadline = document.createElement("p");
+        deadline.textContent = "Last date: " + (item.lastDate
+          ? new Date(item.lastDate).toLocaleDateString()
+          : "Check official notice");
+
+        card.append(tag, title, organization, description, deadline);
+
+        const officialLink = safeOfficialLink(item.officialLink);
+        if (officialLink) {
+          const link = document.createElement("a");
+          link.href = officialLink;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Official website";
+          card.append(link);
+        }
+
+        list.append(card);
+      });
+    }
+
+    function search() {
+      const query = searchInput.value.trim().toLowerCase();
+      const filtered = sampleOpportunities.filter(item =>
+        [item.title, item.type, item.organization, item.qualification, item.description]
+          .some(value => String(value || "").toLowerCase().includes(query))
+      );
+      render(filtered);
+    }
+
+    document.getElementById("searchButton").addEventListener("click", search);
+    searchInput.addEventListener("input", search);
+
+    render(sampleOpportunities);
+  </script>
+</body>
+</html>
