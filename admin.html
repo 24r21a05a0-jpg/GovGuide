@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GovGuide | Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f7fc;
+      color: #17345c;
+    }
+    header {
+      background: #103b76;
+      color: white;
+      padding: 20px 7%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header h1 { margin: 0; }
+    nav a { color: white; text-decoration: none; margin-right: 16px; }
+    main {
+      max-width: 850px;
+      margin: 35px auto;
+      padding: 0 18px;
+    }
+    .panel {
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      border: 1px solid #e0e8f2;
+      box-shadow: 0 5px 18px #17345c0c;
+    }
+    .intro { color: #536985; line-height: 1.5; }
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    label { font-weight: bold; font-size: 14px; }
+    input, select, textarea {
+      display: block;
+      width: 100%;
+      margin-top: 7px;
+      padding: 12px;
+      border: 1px solid #cbd7e6;
+      border-radius: 8px;
+      font: inherit;
+      background: white;
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    button {
+      padding: 13px 18px;
+      border: 0;
+      border-radius: 8px;
+      background: #1769d2;
+      color: white;
+      font: inherit;
+      cursor: pointer;
+    }
+    .full { grid-column: 1 / -1; }
+    #message { line-height: 1.5; }
+    @media (max-width: 600px) {
+      form { grid-template-columns: 1fr; }
+      .full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GovGuide Admin</h1>
+    <nav>
+      <a href="./index.html">Home</a>
+      <a href="./profile.html">Profile</a>
+      <a href="./admin.html">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Add Government Opportunity</h2>
+      <p class="intro">Enter the details from the official recruitment or scheme notification.</p>
+
+      <form id="adminForm">
+        <label>Opportunity Title
+          <input name="title" required maxlength="150" placeholder="e.g. Junior Assistant Recruitment">
+        </label>
+
+        <label>Type
+          <select name="type" required>
+            <option value="">Select type</option>
+            <option>Job</option>
+            <option>Exam</option>
+            <option>Scheme</option>
+            <option>Scholarship</option>
+          </select>
+        </label>
+
+        <label>Organization
+          <input name="organization" required maxlength="150" placeholder="Department or organization">
+        </label>
+
+        <label>Minimum Qualification
+          <select name="qualification" required>
+            <option value="">Select qualification</option>
+            <option>10th</option>
+            <option>Intermediate</option>
+            <option>Diploma</option>
+            <option>B.Tech</option>
+            <option>Degree</option>
+            <option>M.Tech</option>
+            <option>Post Graduation</option>
+          </select>
+        </label>
+
+        <label>Branch / Subject
+          <input name="branch" placeholder="e.g. Any branch">
+        </label>
+
+        <label>Minimum Age
+          <input name="minAge" type="number" min="0" max="120">
+        </label>
+
+        <label>Maximum Age
+          <input name="maxAge" type="number" min="0" max="120">
+        </label>
+
+        <label>Eligible State
+          <select name="state" required>
+            <option value="">Select state</option>
+            <option>Andhra Pradesh</option>
+            <option>Telangana</option>
+            <option>Karnataka</option>
+            <option>Tamil Nadu</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>Category
+          <select name="category" required>
+            <option value="">Select category</option>
+            <option>General</option>
+            <option>OBC</option>
+            <option>SC</option>
+            <option>ST</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>Last Date
+          <input name="lastDate" type="date" required>
+        </label>
+
+        <label class="full">Description
+          <textarea name="description" required maxlength="3000" placeholder="Explain the opportunity and eligibility details"></textarea>
+        </label>
+
+        <label class="full">Official Website URL
+          <input name="officialLink" type="url" placeholder="https://official-website.gov.in">
+        </label>
+
+        <div class="full">
+          <button type="submit">Save Opportunity</button>
+        </div>
+      </form>
+
+      <p id="message" role="status"></p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("adminForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.minAge = data.minAge === "" ? null : Number(data.minAge);
+      data.maxAge = data.maxAge === "" ? null : Number(data.maxAge);
+
+      if (data.minAge !== null && data.maxAge !== null &&
+          data.minAge > data.maxAge) {
+        message.textContent = "Minimum age cannot exceed maximum age.";
+        return;
+      }
+
+      if (data.officialLink) {
+        try {
+          const url = new URL(data.officialLink);
+          if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+        } catch {
+          message.textContent = "Please enter a valid HTTP or HTTPS official website URL.";
+          return;
+        }
+      }
+
+      message.textContent =
+        "Form validated. Backend connection will be added during deployment. " +
+        "This opportunity has not been saved yet.";
+    });
+  </script>
+</body>
+</html>
