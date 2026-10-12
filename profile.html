@@ -40,7 +40,7 @@
     }
 
     main {
-      max-width: 850px;
+      max-width: 950px;
       margin: 35px auto;
       padding: 0 18px;
     }
@@ -60,7 +60,7 @@
 
     .intro {
       color: #536985;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     form {
@@ -96,6 +96,10 @@
       cursor: pointer;
     }
 
+    button:hover {
+      background: #1054ad;
+    }
+
     button:disabled {
       opacity: 0.6;
       cursor: wait;
@@ -107,34 +111,76 @@
 
     #message {
       margin-top: 16px;
+      line-height: 1.5;
       overflow-wrap: anywhere;
     }
 
     #results {
       display: grid;
-      gap: 14px;
-      margin-top: 18px;
+      gap: 18px;
+      margin-top: 20px;
     }
 
     .card {
-      padding: 18px;
+      padding: 22px;
       background: #f8fbff;
       border: 1px solid #dce7f5;
-      border-radius: 10px;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
     }
 
     .card h3 {
-      margin-top: 0;
+      margin: 0 0 12px;
+      color: #103b76;
+      font-size: 21px;
     }
 
     .card p {
-      line-height: 1.5;
+      line-height: 1.6;
       color: #536985;
+      margin: 10px 0;
     }
 
-    .card a {
-      color: #1769d2;
+    .badge {
+      display: inline-block;
+      background: #e3f4e8;
+      color: #216b39;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 12px;
       font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .details {
+      background: white;
+      border: 1px solid #e0e8f2;
+      border-radius: 8px;
+      padding: 12px;
+      white-space: pre-line;
+    }
+
+    .official-link {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 11px 16px;
+      background: #1769d2;
+      color: white !important;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .official-link:hover {
+      background: #1054ad;
+    }
+
+    .empty-message {
+      color: #536985;
+      line-height: 1.6;
+      padding: 14px;
+      background: #f8fbff;
+      border-radius: 8px;
     }
 
     @media (max-width: 600px) {
@@ -144,6 +190,18 @@
 
       .full {
         grid-column: auto;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      header {
+        padding: 18px 5%;
+      }
+
+      nav a {
+        margin-right: 10px;
       }
     }
   </style>
@@ -235,11 +293,18 @@
     </section>
 
     <section class="panel">
-      <h2>Potential Matches</h2>
+      <h2>Matching Opportunities</h2>
       <p class="intro">
-        Matching opportunities will appear here.
+        Government jobs, exams, schemes and scholarships
+        matching your profile will appear here.
       </p>
-      <div id="results"></div>
+
+      <div id="results">
+        <p class="empty-message">
+          Enter your profile details and click
+          "Find Matching Opportunities" to view results.
+        </p>
+      </div>
     </section>
   </main>
 
@@ -250,6 +315,103 @@
     const message = document.getElementById("message");
     const results = document.getElementById("results");
     const submitButton = document.getElementById("submitButton");
+
+    function addText(parent, tag, text, className) {
+      const element = document.createElement(tag);
+      element.textContent = text;
+
+      if (className) {
+        element.className = className;
+      }
+
+      parent.appendChild(element);
+      return element;
+    }
+
+    function addOfficialLink(card, item) {
+      const officialLink = item.officialLink || item.officialURL;
+
+      if (!officialLink) {
+        return;
+      }
+
+      try {
+        const parsedURL = new URL(officialLink);
+
+        if (!["http:", "https:"].includes(parsedURL.protocol)) {
+          return;
+        }
+
+        const link = document.createElement("a");
+        link.href = parsedURL.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "View Official Website";
+        link.className = "official-link";
+
+        card.appendChild(link);
+      } catch (error) {
+        // Do not display invalid website links.
+      }
+    }
+
+    function displayMatches(matches) {
+      results.replaceChildren();
+
+      if (!matches.length) {
+        addText(
+          results,
+          "p",
+          "Your profile was saved, but no matching opportunities were found.",
+          "empty-message"
+        );
+        return;
+      }
+
+      matches.forEach(function(item) {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        addText(card, "span", "Matching Opportunity", "badge");
+
+        addText(
+          card,
+          "h3",
+          item.title || "Government Opportunity"
+        );
+
+        addText(
+          card,
+          "p",
+          (item.type || "Opportunity") +
+          " | " +
+          (item.organization || "Organization not specified")
+        );
+
+        const eligibility = [
+          "Qualification: " + (item.qualification || "Not specified"),
+          "Branch / Subject: " + (item.branch || "Not specified"),
+          "Age Limit: " +
+            (item.minAge ?? "Not specified") + " - " +
+            (item.maxAge ?? "Not specified"),
+          "Eligible State: " + (item.state || "Not specified"),
+          "Category: " + (item.category || "Not specified"),
+          "Last Date: " + (item.lastDate || "Not specified")
+        ].join("\n");
+
+        addText(card, "p", eligibility, "details");
+
+        addText(
+          card,
+          "p",
+          item.description || "No description available."
+        );
+
+        addOfficialLink(card, item);
+
+        results.appendChild(card);
+      });
+    }
 
     form.addEventListener("submit", async function(event) {
       event.preventDefault();
@@ -285,12 +447,13 @@
 
         if (!saveResponse.ok) {
           throw new Error(
-            saveResult.message || "Could not save profile."
+            saveResult.message || saveResult.error ||
+            "Could not save profile."
           );
         }
 
         message.textContent =
-          "Profile saved! Looking for matching opportunities...";
+          "Profile saved! Finding matching opportunities...";
 
         const matchResponse = await fetch(API_URL + "/match", {
           method: "POST",
@@ -300,7 +463,10 @@
           body: JSON.stringify({
             age: data.age,
             qualification: data.qualification,
-            state: data.state
+            branch: data.branch,
+            percentage: data.percentage,
+            state: data.state,
+            category: data.category
           })
         });
 
@@ -308,70 +474,29 @@
 
         if (!matchResponse.ok) {
           throw new Error(
-            "Profile saved, but matching failed: " +
-            (matchResult.message || matchResponse.status)
+            matchResult.message || matchResult.error ||
+            "Matching failed."
           );
         }
 
         const matches = Array.isArray(matchResult)
           ? matchResult
-          : matchResult.opportunities || matchResult.matches || [];
+          : Array.isArray(matchResult.opportunities)
+            ? matchResult.opportunities
+            : Array.isArray(matchResult.matches)
+              ? matchResult.matches
+              : [];
 
-        if (matches.length === 0) {
-          results.textContent =
-            "Your profile was saved, but no matching opportunities were found.";
-        } else {
-          matches.forEach(function(item) {
-            const card = document.createElement("article");
-            card.className = "card";
-
-            const title = document.createElement("h3");
-            title.textContent = item.title || "Opportunity";
-
-            const details = document.createElement("p");
-            details.textContent =
-              (item.type || "") + " | " +
-              (item.organization || "") +
-              " | Qualification: " +
-              (item.qualification || "Not specified");
-
-            const description = document.createElement("p");
-            description.textContent =
-              item.description || "No description available.";
-
-            card.append(title, details, description);
-
-            const officialLink = item.officialLink || item.officialURL;
-
-            if (officialLink) {
-              try {
-                const parsedURL = new URL(officialLink);
-
-                if (parsedURL.protocol === "https:" ||
-                    parsedURL.protocol === "http:") {
-                  const link = document.createElement("a");
-                  link.href = parsedURL.href;
-                  link.target = "_blank";
-                  link.rel = "noopener noreferrer";
-                  link.textContent = "Official website";
-                  card.append(link);
-                }
-              } catch (error) {
-                // Ignore invalid website links.
-              }
-            }
-
-            results.append(card);
-          });
-        }
+        displayMatches(matches);
 
         message.textContent = "Profile saved successfully!";
-        form.reset();
 
       } catch (error) {
         message.textContent =
           "Error: " + error.message +
-          ". Check the backend API and try again.";
+          " Please check your backend connection.";
+
+        console.error("GovGuide error:", error);
       } finally {
         submitButton.disabled = false;
       }
