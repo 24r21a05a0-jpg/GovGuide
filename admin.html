@@ -173,38 +173,57 @@
       <p id="message" role="status"></p>
     </section>
   </main>
+```html
+<script>
+const form = document.getElementById("adminForm");
+const message = document.getElementById("message");
 
-  <script>
-    const form = document.getElementById("adminForm");
-    const message = document.getElementById("message");
+const API_URL = "https://govguide-1h64.onrender.com";
 
-    form.addEventListener("submit", function(event) {
-      event.preventDefault();
+form.addEventListener("submit", async function(event) {
+  event.preventDefault();
 
-      const data = Object.fromEntries(new FormData(form).entries());
-      data.minAge = data.minAge === "" ? null : Number(data.minAge);
-      data.maxAge = data.maxAge === "" ? null : Number(data.maxAge);
+  const data = Object.fromEntries(new FormData(form).entries());
 
-      if (data.minAge !== null && data.maxAge !== null &&
-          data.minAge > data.maxAge) {
-        message.textContent = "Minimum age cannot exceed maximum age.";
-        return;
-      }
+  data.minAge = data.minAge === "" ? null : Number(data.minAge);
+  data.maxAge = data.maxAge === "" ? null : Number(data.maxAge);
 
-      if (data.officialLink) {
-        try {
-          const url = new URL(data.officialLink);
-          if (!["http:", "https:"].includes(url.protocol)) throw new Error();
-        } catch {
-          message.textContent = "Please enter a valid HTTP or HTTPS official website URL.";
-          return;
-        }
-      }
+  if (
+    data.minAge !== null &&
+    data.maxAge !== null &&
+    data.minAge > data.maxAge
+  ) {
+    message.textContent = "Minimum age cannot exceed maximum age.";
+    return;
+  }
 
-      message.textContent =
-        "Form validated. Backend connection will be added during deployment. " +
-        "This opportunity has not been saved yet.";
+  try {
+    message.textContent = "Saving opportunity...";
+
+    const response = await fetch(`${API_URL}/opportunity`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
     });
-  </script>
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Failed to save opportunity.");
+    }
+
+    message.textContent = "Opportunity saved successfully!";
+    form.reset();
+
+  } catch (error) {
+    message.textContent =
+      "Could not save opportunity. Please check the backend connection.";
+    console.error(error);
+  }
+});
+</script>
+```
 </body>
 </html>
