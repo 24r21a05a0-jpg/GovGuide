@@ -194,20 +194,23 @@ app.post("/match", async (req, res) => {
         return false;
       }
 
-      const requiredBranch = (item.branch || "")
-        .trim()
-        .toLowerCase();
+      
+const requiredBranch = (item.branch || "")
+  .trim()
+  .toLowerCase();
 
-      const userBranch = (branch || "").trim().toLowerCase();
+const userBranch = (branch || "")
+  .trim()
+  .toLowerCase();
 
-      if (
-        requiredBranch &&
-        requiredBranch !== "any" &&
-        requiredBranch !== "all" &&
-        requiredBranch !== userBranch
-      ) {
-        return false;
-      }
+const anyBranchValues = ["", "any", "all", "all branches", "any branch", "any branch", "open to all"];
+
+if (
+  !anyBranchValues.includes(requiredBranch) &&
+  requiredBranch !== userBranch
+) {
+  return false;
+}
 
       return true;
     });
