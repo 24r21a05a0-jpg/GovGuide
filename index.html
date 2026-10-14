@@ -7,12 +7,14 @@
   <title>GovGuide | Government Opportunities</title>
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f3f7fc;
       color: #17345c;
     }
+
     header {
       background: #103b76;
       color: white;
@@ -23,47 +25,84 @@
       flex-wrap: wrap;
       gap: 14px;
     }
+
     header h1 { margin: 0; }
+
     nav a {
       color: white;
       margin-left: 18px;
       text-decoration: none;
     }
+
     .hero {
       text-align: center;
-      padding: 55px 20px 35px;
+      padding: 45px 20px 30px;
       background: linear-gradient(135deg, #dcecff, #f7fbff);
     }
+
     .hero h2 { font-size: clamp(28px, 4vw, 42px); margin: 0 0 12px; }
     .hero p { color: #536985; }
+
     .search {
       display: flex;
       gap: 8px;
-      max-width: 650px;
+      max-width: 700px;
       margin: 25px auto 0;
     }
+
     input, button {
       font: inherit;
       padding: 13px;
       border-radius: 8px;
     }
+
     input { border: 1px solid #cbd7e6; min-width: 0; }
     .search input { flex: 1; }
+
     button {
       border: 0;
       background: #1769d2;
       color: white;
       cursor: pointer;
     }
-    main { max-width: 1100px; margin: 35px auto; padding: 0 20px; }
-    .section-title { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+    main { max-width: 1150px; margin: 30px auto; padding: 0 20px; }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .filters button {
+      background: white;
+      color: #174879;
+      border: 1px solid #cbd7e6;
+    }
+
+    .filters button.active {
+      background: #1769d2;
+      color: white;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     #status { color: #536985; }
+
     #opportunities {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 18px;
       margin-top: 20px;
     }
+
     .card {
       background: white;
       border: 1px solid #e0e8f2;
@@ -71,6 +110,7 @@
       padding: 22px;
       box-shadow: 0 5px 18px #17345c0c;
     }
+
     .tag {
       display: inline-block;
       background: #e1efff;
@@ -79,10 +119,20 @@
       border-radius: 20px;
       font-size: 13px;
     }
+
     .card h3 { margin-bottom: 8px; }
-    .card p { color: #536985; line-height: 1.5; }
+    .card p { color: #536985; line-height: 1.5; overflow-wrap: anywhere; }
     .card a { color: #1769d2; font-weight: bold; }
+
+    .deadline {
+      background: #f1f6fd;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+    }
+
     footer { text-align: center; padding: 25px; color: #64758a; }
+
     @media (max-width: 520px) {
       header { padding: 18px; }
       nav a { margin-left: 0; margin-right: 12px; }
@@ -96,66 +146,126 @@
     <nav>
       <a href="./index.html">Home</a>
       <a href="./profile.html">Profile</a>
-      <a href="./admin.html">Admin</a>
     </nav>
   </header>
 
   <section class="hero">
     <h2>Find Government Opportunities for You</h2>
-    <p>Explore jobs, exams, scholarships and government schemes in one place.</p>
+    <p>Explore government jobs, exams, scholarships and schemes in one place.</p>
     <div class="search">
-      <input id="searchInput" type="search" placeholder="Search jobs, exams, scholarships...">
-      <button id="searchButton">Search</button>
+      <input id="searchInput" type="search"
+        placeholder="Search jobs, exams, scholarships and schemes...">
+      <button id="searchButton" type="button">Search</button>
     </div>
   </section>
 
   <main>
     <div class="section-title">
-      <h2>Government Opportunities</h2>
+      <h2>All Opportunities</h2>
       <span id="count"></span>
     </div>
-    <p id="status">Loading opportunities...</p>
+
+    <div class="filters" id="filters">
+      <button type="button" class="active" data-type="All">All</button>
+      <button type="button" data-type="Job">Jobs</button>
+      <button type="button" data-type="Exam">Exams</button>
+      <button type="button" data-type="Scheme">Schemes</button>
+      <button type="button" data-type="Scholarship">Scholarships</button>
+    </div>
+
+    <p id="status" role="status">Loading opportunities...</p>
     <div id="opportunities"></div>
   </main>
 
   <footer>GovGuide — Your guide to government opportunities.</footer>
 
   <script>
-    // The website will use this API after we deploy the backend.
-    // For now, sample opportunities let us build the page.
-    const sampleOpportunities = [
-      {
-        title: "Government Job Opening",
-        type: "Job",
-        organization: "Example Government Department",
-        qualification: "Degree",
-        description: "Explore this sample government job opportunity.",
-        lastDate: "2026-12-31",
-        officialLink: ""
-      },
-      {
-        title: "Government Scholarship",
-        type: "Scholarship",
-        organization: "Example Education Department",
-        qualification: "Degree",
-        description: "Explore this sample scholarship opportunity.",
-        lastDate: "2026-11-30",
-        officialLink: ""
-      },
-      {
-        title: "Competitive Government Exam",
-        type: "Exam",
-        organization: "Example Recruitment Board",
-        qualification: "Degree",
-        description: "Prepare for this sample government examination.",
-        lastDate: "2026-12-15",
-        officialLink: ""
-      }
-    ];
+    const API_URL = "https://govguide-1h64.onrender.com";
 
     const list = document.getElementById("opportunities");
     const status = document.getElementById("status");
+    const count = document.getElementById("count");
     const searchInput = document.getElementById("searchInput");
+    const filters = document.getElementById("filters");
+
+    let allOpportunities = [];
+    let selectedType = "All";
+    let usingSamples = false;
+
+    const sampleOpportunities = [
+      {
+        title: "SSC Recruitment - Sample",
+        type: "Job",
+        organization: "Staff Selection Commission",
+        qualification: "10th",
+        state: "All India",
+        category: "All",
+        categories: ["General", "OBC", "SC", "ST", "EWS"],
+        description: "Demonstration record. Check the official SSC website for current vacancies and eligibility.",
+        lastDate: "",
+        officialLink: "https://ssc.gov.in/"
+      },
+      {
+        title: "Railway Recruitment - Sample",
+        type: "Job",
+        organization: "Railway Recruitment Board",
+        qualification: "10th",
+        state: "All India",
+        category: "All",
+        categories: ["General", "OBC", "SC", "ST", "EWS"],
+        description: "Demonstration record. Check the official recruitment notification before applying.",
+        lastDate: "",
+        officialLink: "https://indianrailways.gov.in/"
+      },
+      {
+        title: "Competitive Exam - Sample",
+        type: "Exam",
+        organization: "Example Examination Board",
+        qualification: "Intermediate",
+        state: "All India",
+        category: "All",
+        categories: ["All"],
+        description: "Sample exam entry for demonstrating the GovGuide website.",
+        lastDate: "",
+        officialLink: ""
+      },
+      {
+        title: "Entrance Exam - Sample",
+        type: "Exam",
+        organization: "Example Entrance Board",
+        qualification: "Intermediate",
+        state: "All India",
+        category: "All",
+        categories: ["All"],
+        description: "Sample entrance examination. Verify the official dates and eligibility.",
+        lastDate: "",
+        officialLink: ""
+      },
+      {
+        title: "Student Scholarship - Sample",
+        type: "Scheme",
+        organization: "Example Education Department",
+        qualification: "Degree",
+        state: "All India",
+        category: "All",
+        categories: ["All"],
+        description: "Demonstration scheme entry. Confirm eligibility and application dates from the official portal.",
+        lastDate: "",
+        officialLink: ""
+      },
+      {
+        title: "Education Assistance - Sample",
+        type: "Scholarship",
+        organization: "Example Scholarship Department",
+        qualification: "Degree",
+        state: "All India",
+        category: "All",
+        categories: ["All"],
+        description: "Sample scholarship record for project demonstration.",
+        lastDate: "",
+        officialLink: ""
+      }
+    ];
 
     function safeOfficialLink(value) {
       try {
@@ -166,17 +276,42 @@
       }
     }
 
+    function formatDate(value) {
+      if (!value) return "Not announced";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "Not announced";
+
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC"
+      });
+    }
+
+    function addDetail(card, label, value) {
+      if (value === undefined || value === null || value === "") return;
+
+      const p = document.createElement("p");
+      p.textContent = label + ": " + value;
+      card.appendChild(p);
+    }
+
     function render(items) {
       list.replaceChildren();
-      document.getElementById("count").textContent =
+
+      count.textContent =
         items.length + " opportunit" + (items.length === 1 ? "y" : "ies");
 
-      if (!items.length) {
-        status.textContent = "No matching opportunities found. Try another search.";
-        return;
+      if (usingSamples) {
+        status.textContent =
+          "Showing demonstration samples. These are not confirmed current openings.";
+      } else {
+        status.textContent = items.length
+          ? ""
+          : "No matching opportunities found. Try another search.";
       }
-
-      status.textContent = "";
 
       items.forEach(item => {
         const card = document.createElement("article");
@@ -189,18 +324,38 @@
         const title = document.createElement("h3");
         title.textContent = item.title || "Untitled opportunity";
 
-        const organization = document.createElement("p");
-        organization.textContent = "Organization: " + (item.organization || "Not specified");
+        card.append(tag, title);
+
+        addDetail(card, "Organization", item.organization);
+        addDetail(card, "Qualification", item.qualification);
+
+        const categories = Array.isArray(item.categories) && item.categories.length
+          ? item.categories.join(", ")
+          : item.category;
+
+        addDetail(card, "Eligible categories", categories);
+        addDetail(card, "State", item.state);
 
         const description = document.createElement("p");
-        description.textContent = item.description || "See the official notice for details.";
+        description.textContent =
+          item.description || "Check the official notification for details.";
+        card.appendChild(description);
 
-        const deadline = document.createElement("p");
-        deadline.textContent = "Last date: " + (item.lastDate
-          ? new Date(item.lastDate).toLocaleDateString()
-          : "Check official notice");
+        const dates = document.createElement("div");
+        dates.className = "deadline";
 
-        card.append(tag, title, organization, description, deadline);
+        [
+          ["Application starts", item.startDate],
+          ["Last date to apply", item.lastDate],
+          ["Exam date", item.examDate],
+          ["Allotment date", item.allotmentDate]
+        ].forEach(([label, value]) => {
+          const p = document.createElement("p");
+          p.textContent = label + ": " + formatDate(value);
+          dates.appendChild(p);
+        });
+
+        card.appendChild(dates);
 
         const officialLink = safeOfficialLink(item.officialLink);
         if (officialLink) {
@@ -208,27 +363,88 @@
           link.href = officialLink;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
-          link.textContent = "Official website";
-          card.append(link);
+          link.textContent = "Visit official website";
+          card.appendChild(link);
         }
 
-        list.append(card);
+        list.appendChild(card);
       });
     }
 
-    function search() {
+    function applyFilters() {
       const query = searchInput.value.trim().toLowerCase();
-      const filtered = sampleOpportunities.filter(item =>
-        [item.title, item.type, item.organization, item.qualification, item.description]
-          .some(value => String(value || "").toLowerCase().includes(query))
-      );
+
+      const filtered = allOpportunities.filter(item => {
+        const typeMatches =
+          selectedType === "All" || item.type === selectedType;
+
+        const searchable = [
+          item.title,
+          item.type,
+          item.organization,
+          item.qualification,
+          item.branch,
+          item.state,
+          item.category,
+          ...(Array.isArray(item.categories) ? item.categories : []),
+          item.description
+        ].join(" ").toLowerCase();
+
+        return typeMatches && searchable.includes(query);
+      });
+
       render(filtered);
     }
 
-    document.getElementById("searchButton").addEventListener("click", search);
-    searchInput.addEventListener("input", search);
+    async function loadOpportunities() {
+      status.textContent = "Loading opportunities...";
 
-    render(sampleOpportunities);
+      try {
+        const response = await fetch(`${API_URL}/opportunity`);
+
+        if (!response.ok) {
+          throw new Error("Could not load opportunities.");
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Unexpected API response.");
+        }
+
+        if (data.length > 0) {
+          allOpportunities = data;
+          usingSamples = false;
+        } else {
+          allOpportunities = sampleOpportunities;
+          usingSamples = true;
+        }
+      } catch (error) {
+        console.error("Loading opportunities failed:", error);
+        allOpportunities = sampleOpportunities;
+        usingSamples = true;
+      }
+
+      applyFilters();
+    }
+
+    document.getElementById("searchButton").addEventListener("click", applyFilters);
+    searchInput.addEventListener("input", applyFilters);
+
+    filters.addEventListener("click", event => {
+      const button = event.target.closest("button[data-type]");
+      if (!button) return;
+
+      selectedType = button.dataset.type;
+
+      filters.querySelectorAll("button").forEach(item => {
+        item.classList.toggle("active", item === button);
+      });
+
+      applyFilters();
+    });
+
+    loadOpportunities();
   </script>
 </body>
 </html>
