@@ -55,7 +55,10 @@ app.get("/opportunity", async (req, res) => {
     const opportunities = await Opportunity.find().sort({ lastDate: 1 });
     res.json(opportunities);
   } catch (error) {
-    res.status(500).json({ message: "Could not load opportunities." });
+    console.error("Load opportunities error:", error.message);
+    res.status(500).json({
+      message: "Could not load opportunities."
+    });
   }
 });
 
@@ -63,6 +66,7 @@ app.post("/opportunity", async (req, res) => {
   try {
     const opportunity = new Opportunity(req.body);
     await opportunity.save();
+
     res.status(201).json({
       message: "Opportunity saved successfully!",
       opportunity
@@ -79,6 +83,7 @@ app.post("/profile", async (req, res) => {
   try {
     const profile = new Profile(req.body);
     await profile.save();
+
     res.status(201).json({
       message: "Profile saved successfully!",
       profile
@@ -93,36 +98,127 @@ app.post("/profile", async (req, res) => {
 
 app.post("/match", async (req, res) => {
   try {
-    const { age, qualification, state } = req.body;
+    const { age, qualification, branch, state, category } = req.body;
 
-    if (!Number.isFinite(Number(age)) || !qualification || !state) {
+    if (
+      age === undefined ||
+      age === null ||
+      age === "" ||
+      !Number.isFinite(Number(age)) ||
+      Number(age) <= 0 ||
+      !qualification ||
+      !state ||
+      !category
+    ) {
       return res.status(400).json({
-        message: "Age, qualification, and state are required."
+        message: "Age, qualification, state, and category are required."
       });
     }
 
     const levels = [
-      "10th", "Intermediate", "Diploma",
-      "B.Tech", "Degree", "M.Tech", "Post Graduation"
+      "10th",
+      "Intermediate",
+      "Diploma",
+      "B.Tech",
+      "Degree",
+      "M.Tech",
+      "Post Graduation"
     ];
+
     const userLevel = levels.indexOf(qualification);
+
+    if (userLevel === -1) {
+      return res.status(400).json({
+        message: "Invalid qualification."
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const all = await Opportunity.find({
       $and: [
-        { $or: [{ minAge: null }, { minAge: { $exists: false } }, { minAge: { $lte: Number(age) } }] },
-        { $or: [{ maxAge: null }, { maxAge: { $exists: false } }, { maxAge: { $gte: Number(age) } }] },
-        { $or: [{ state: state }, { state: "Other" }] }
+        {
+          $or: [
+            { minAge: null },
+            { minAge: { $exists: false } },
+            { minAge: { $lte: Number(age) } }
+          ]
+        },
+        {
+          $or: [
+            { maxAge: null },
+            { maxAge: { $exists: false } },
+            { maxAge: { $gte: Number(age) } }
+          ]
+        },
+        {
+          $or: [
+            {
+              state: {
+                $regex: "^" + state.trim() + "$",
+                $options: "i"
+              }
+            },
+            {
+              state: {
+                $regex: "^Other$",
+                $options: "i"
+              }
+            }
+          ]
+        },
+        { lastDate: { $gte: today } }
       ]
     }).sort({ lastDate: 1 });
 
     const matches = all.filter(item => {
       const requiredLevel = levels.indexOf(item.qualification);
-      return userLevel >= 0 && requiredLevel >= 0 && userLevel >= requiredLevel;
+
+      if (requiredLevel === -1 || userLevel < requiredLevel) {
+        return false;
+      }
+
+      const opportunityCategory = (item.category || "")
+        .trim()
+        .toLowerCase();
+
+      const userCategory = category.trim().toLowerCase();
+
+      if (
+        opportunityCategory !== userCategory &&
+        opportunityCategory !== "other" &&
+        opportunityCategory !== "all" &&
+        opportunityCategory !== "any"
+      ) {
+        return false;
+      }
+
+      const requiredBranch = (item.branch || "")
+        .trim()
+        .toLowerCase();
+
+      const userBranch = (branch || "").trim().toLowerCase();
+
+      if (
+        requiredBranch &&
+        requiredBranch !== "any" &&
+        requiredBranch !== "all" &&
+        requiredBranch !== userBranch
+      ) {
+        return false;
+      }
+
+      return true;
     });
 
     res.json(matches);
   } catch (error) {
-    res.status(500).json({ message: "Could not find matches." });
+    console.error("Matching error:", error.message);
+
+    res.status(500).json({
+      message: "Could not find matches."
+    });
   }
 });
 
