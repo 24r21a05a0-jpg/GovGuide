@@ -1,15 +1,19 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 const PORT = process.env.PORT || 10000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const Opportunity = mongoose.model(
   "Opportunity",
@@ -28,10 +32,7 @@ const Opportunity = mongoose.model(
       maxAge: { type: Number, default: null },
       state: { type: String, required: true },
       category: { type: String, default: "All" },
-      categories: {
-        type: [String],
-        default: []
-      },
+      categories: { type: [String], default: [] },
       startDate: { type: Date, default: null },
       lastDate: { type: Date, required: true },
       examDate: { type: Date, default: null },
@@ -59,8 +60,79 @@ const Profile = mongoose.model(
   )
 );
 
+function requireAdmin(req, res, next) {
+  const header = req.headers.authorization || "";
+  const [scheme, token] = header.split(" ");
+
+  if (scheme !== "Bearer" || !token) {
+    return res.status(401).json({
+      message: "Admin login required."
+    });
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    if (payload.role !== "admin" || payload.username !== ADMIN_USERNAME) {
+      return res.status(403).json({
+        message: "Admin access required."
+      });
+    }
+
+    next();
+  } catch {
+    return res.status(401).json({
+      message: "Invalid or expired login. Please log in again."
+    });
+  }
+}
+
 app.get("/", (req, res) => {
   res.json({ message: "GovGuide API is running!" });
+});
+
+app.post("/admin/login", async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+
+    if (
+      typeof username !== "string" ||
+      typeof password !== "string" ||
+      !username ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Username and password are required."
+      });
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      password,
+      ADMIN_PASSWORD_HASH
+    );
+
+    if (username !== ADMIN_USERNAME || !passwordMatches) {
+      return res.status(401).json({
+        message: "Invalid username or password."
+      });
+    }
+
+    const token = jwt.sign(
+      { role: "admin", username: ADMIN_USERNAME },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    res.json({
+      message: "Admin login successful.",
+      token
+    });
+  } catch (error) {
+    console.error("Admin login error:", error.message);
+    res.status(500).json({
+      message: "Could not complete admin login."
+    });
+  }
 });
 
 app.get("/opportunity", async (req, res) => {
@@ -72,10 +144,12 @@ app.get("/opportunity", async (req, res) => {
     }
 
     if (req.query.search) {
+      const search = String(req.query.search).slice(0, 100);
+
       filter.$or = [
-        { title: { $regex: req.query.search, $options: "i" } },
-        { organization: { $regex: req.query.search, $options: "i" } },
-        { description: { $regex: req.query.search, $options: "i" } }
+        { title: { $regex: search, $options: "i" } },
+        { organization: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
       ];
     }
 
@@ -92,7 +166,7 @@ app.get("/opportunity", async (req, res) => {
   }
 });
 
-app.post("/opportunity", async (req, res) => {
+app.post("/opportunity", requireAdmin, async (req, res) => {
   try {
     const data = { ...req.body };
 
@@ -126,8 +200,7 @@ app.post("/profile", async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({
-      message: "Could not save profile. Check all required fields.",
-      error: error.message
+      message: "Could not save profile. Check all required fields."
     });
   }
 });
@@ -257,8 +330,13 @@ app.post("/match", async (req, res) => {
 
 async function startServer() {
   if (!MONGODB_URI) {
-    console.error("Missing MONGODB_URI environment variable.");
-    process.exit(1);
+    throw new Error("Missing MONGODB_URI environment variable.");
+  }
+
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD_HASH || !JWT_SECRET) {
+    throw new Error(
+      "Set ADMIN_USERNAME, ADMIN_PASSWORD_HASH, and JWT_SECRET in Render."
+    );
   }
 
   await mongoose.connect(MONGODB_URI);
