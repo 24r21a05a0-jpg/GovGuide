@@ -7,12 +7,14 @@
   <title>GovGuide | Admin</title>
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f3f7fc;
       color: #17345c;
     }
+
     header {
       background: #103b76;
       color: white;
@@ -23,13 +25,16 @@
       flex-wrap: wrap;
       gap: 12px;
     }
+
     header h1 { margin: 0; }
     nav a { color: white; text-decoration: none; margin-right: 16px; }
+
     main {
-      max-width: 850px;
+      max-width: 900px;
       margin: 35px auto;
       padding: 0 18px;
     }
+
     .panel {
       background: white;
       padding: 25px;
@@ -37,13 +42,17 @@
       border: 1px solid #e0e8f2;
       box-shadow: 0 5px 18px #17345c0c;
     }
+
     .intro { color: #536985; line-height: 1.5; }
+
     form {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
     }
+
     label { font-weight: bold; font-size: 14px; }
+
     input, select, textarea {
       display: block;
       width: 100%;
@@ -54,7 +63,9 @@
       font: inherit;
       background: white;
     }
+
     textarea { resize: vertical; min-height: 100px; }
+
     button {
       padding: 13px 18px;
       border: 0;
@@ -64,8 +75,28 @@
       font: inherit;
       cursor: pointer;
     }
+
+    button:disabled { opacity: 0.6; cursor: wait; }
     .full { grid-column: 1 / -1; }
-    #message { line-height: 1.5; }
+    #message { line-height: 1.5; overflow-wrap: anywhere; }
+
+    .categories {
+      border: 1px solid #cbd7e6;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 7px;
+    }
+
+    .categories label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 7px 12px 7px 0;
+      font-weight: normal;
+    }
+
+    .categories input { width: auto; margin: 0; }
+
     @media (max-width: 600px) {
       form { grid-template-columns: 1fr; }
       .full { grid-column: auto; }
@@ -78,18 +109,20 @@
     <nav>
       <a href="./index.html">Home</a>
       <a href="./profile.html">Profile</a>
-      <a href="./admin.html">Admin</a>
     </nav>
   </header>
 
   <main>
     <section class="panel">
       <h2>Add Government Opportunity</h2>
-      <p class="intro">Enter the details from the official recruitment or scheme notification.</p>
+      <p class="intro">
+        Enter information from the official recruitment, examination or scheme notification.
+      </p>
 
       <form id="adminForm">
         <label>Opportunity Title
-          <input name="title" required maxlength="150" placeholder="e.g. Junior Assistant Recruitment">
+          <input name="title" required maxlength="150"
+            placeholder="e.g. Junior Assistant Recruitment">
         </label>
 
         <label>Type
@@ -103,7 +136,8 @@
         </label>
 
         <label>Organization
-          <input name="organization" required maxlength="150" placeholder="Department or organization">
+          <input name="organization" required maxlength="150"
+            placeholder="Department or organization">
         </label>
 
         <label>Minimum Qualification
@@ -120,7 +154,7 @@
         </label>
 
         <label>Branch / Subject
-          <input name="branch" placeholder="e.g. Any branch">
+          <input name="branch" placeholder="Any branch">
         </label>
 
         <label>Minimum Age
@@ -142,88 +176,136 @@
           </select>
         </label>
 
-        <label>Category
-          <select name="category" required>
-            <option value="">Select category</option>
-            <option>General</option>
-            <option>OBC</option>
-            <option>SC</option>
-            <option>ST</option>
-            <option>Other</option>
-          </select>
+        <div class="full">
+          <label>Eligible Categories</label>
+          <div class="categories">
+            <label><input type="checkbox" name="categories" value="General"> General</label>
+            <label><input type="checkbox" name="categories" value="OBC"> OBC</label>
+            <label><input type="checkbox" name="categories" value="SC"> SC</label>
+            <label><input type="checkbox" name="categories" value="ST"> ST</label>
+            <label><input type="checkbox" name="categories" value="EWS"> EWS</label>
+            <label><input type="checkbox" name="categories" value="Other"> Other</label>
+            <label><input type="checkbox" name="categories" value="All"> All eligible categories</label>
+          </div>
+        </div>
+
+        <label>Application Start Date
+          <input name="startDate" type="date">
         </label>
 
-        <label>Last Date
+        <label>Last Date to Apply
           <input name="lastDate" type="date" required>
         </label>
 
+        <label>Exam Date
+          <input name="examDate" type="date">
+        </label>
+
+        <label>Allotment / Counselling Date
+          <input name="allotmentDate" type="date">
+        </label>
+
         <label class="full">Description
-          <textarea name="description" required maxlength="3000" placeholder="Explain the opportunity and eligibility details"></textarea>
+          <textarea name="description" required maxlength="3000"
+            placeholder="Explain the opportunity, eligibility and important details"></textarea>
         </label>
 
         <label class="full">Official Website URL
-          <input name="officialLink" type="url" placeholder="https://official-website.gov.in">
+          <input name="officialLink" type="url"
+            placeholder="https://official-website.gov.in">
         </label>
 
         <div class="full">
-          <button type="submit">Save Opportunity</button>
+          <button id="saveButton" type="submit">Save Opportunity</button>
         </div>
       </form>
 
-      <p id="message" role="status"></p>
+      <p id="message" role="status" aria-live="polite"></p>
     </section>
   </main>
-```html
-<script>
-const form = document.getElementById("adminForm");
-const message = document.getElementById("message");
 
-const API_URL = "https://govguide-1h64.onrender.com";
+  <script>
+    const form = document.getElementById("adminForm");
+    const message = document.getElementById("message");
+    const saveButton = document.getElementById("saveButton");
 
-form.addEventListener("submit", async function(event) {
-  event.preventDefault();
+    const API_URL = "https://govguide-1h64.onrender.com";
 
-  const data = Object.fromEntries(new FormData(form).entries());
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
 
-  data.minAge = data.minAge === "" ? null : Number(data.minAge);
-  data.maxAge = data.maxAge === "" ? null : Number(data.maxAge);
+      const data = Object.fromEntries(new FormData(form).entries());
 
-  if (
-    data.minAge !== null &&
-    data.maxAge !== null &&
-    data.minAge > data.maxAge
-  ) {
-    message.textContent = "Minimum age cannot exceed maximum age.";
-    return;
-  }
+      data.categories = Array.from(
+        form.querySelectorAll('input[name="categories"]:checked')
+      ).map(input => input.value);
 
-  try {
-    message.textContent = "Saving opportunity...";
+      if (data.categories.length === 0) {
+        message.textContent = "Please select at least one eligible category.";
+        return;
+      }
 
-    const response = await fetch(`${API_URL}/opportunity`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
+      if (data.categories.includes("All") && data.categories.length > 1) {
+        message.textContent = 'Select "All eligible categories" alone.';
+        return;
+      }
+
+      data.category = data.categories[0];
+
+      data.minAge = data.minAge === "" ? null : Number(data.minAge);
+      data.maxAge = data.maxAge === "" ? null : Number(data.maxAge);
+
+      data.startDate = data.startDate || null;
+      data.examDate = data.examDate || null;
+      data.allotmentDate = data.allotmentDate || null;
+
+      if (
+        data.minAge !== null &&
+        data.maxAge !== null &&
+        data.minAge > data.maxAge
+      ) {
+        message.textContent = "Minimum age cannot exceed maximum age.";
+        return;
+      }
+
+      if (
+        data.startDate &&
+        data.lastDate &&
+        data.startDate > data.lastDate
+      ) {
+        message.textContent =
+          "Application start date cannot be after the last date.";
+        return;
+      }
+
+      try {
+        saveButton.disabled = true;
+        message.textContent = "Saving opportunity...";
+
+        const response = await fetch(`${API_URL}/opportunity`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.message || result.error || "Failed to save opportunity."
+          );
+        }
+
+        message.textContent = "Opportunity saved successfully!";
+        form.reset();
+      } catch (error) {
+        message.textContent =
+          "Could not save opportunity. Check the Render deployment and try again.";
+        console.error(error);
+      } finally {
+        saveButton.disabled = false;
+      }
     });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || result.error || "Failed to save opportunity.");
-    }
-
-    message.textContent = "Opportunity saved successfully!";
-    form.reset();
-
-  } catch (error) {
-    message.textContent =
-      "Could not save opportunity. Please check the backend connection.";
-    console.error(error);
-  }
-});
-</script>
-```
+  </script>
 </body>
 </html>
