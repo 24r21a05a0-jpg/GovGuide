@@ -13,37 +13,50 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 const Opportunity = mongoose.model(
   "Opportunity",
-  new mongoose.Schema({
-    title: { type: String, required: true, trim: true },
-    type: {
-      type: String,
-      enum: ["Job", "Exam", "Scheme", "Scholarship"],
-      required: true
+  new mongoose.Schema(
+    {
+      title: { type: String, required: true, trim: true },
+      type: {
+        type: String,
+        enum: ["Job", "Exam", "Scheme", "Scholarship"],
+        required: true
+      },
+      organization: { type: String, required: true, trim: true },
+      qualification: { type: String, required: true },
+      branch: { type: String, default: "" },
+      minAge: { type: Number, default: null },
+      maxAge: { type: Number, default: null },
+      state: { type: String, required: true },
+      category: { type: String, default: "All" },
+      categories: {
+        type: [String],
+        default: []
+      },
+      startDate: { type: Date, default: null },
+      lastDate: { type: Date, required: true },
+      examDate: { type: Date, default: null },
+      allotmentDate: { type: Date, default: null },
+      description: { type: String, required: true },
+      officialLink: { type: String, default: "" }
     },
-    organization: { type: String, required: true, trim: true },
-    qualification: { type: String, required: true },
-    branch: { type: String, default: "" },
-    minAge: { type: Number, default: null },
-    maxAge: { type: Number, default: null },
-    state: { type: String, required: true },
-    category: { type: String, required: true },
-    lastDate: { type: Date, required: true },
-    description: { type: String, required: true },
-    officialLink: { type: String, default: "" }
-  }, { timestamps: true })
+    { timestamps: true }
+  )
 );
 
 const Profile = mongoose.model(
   "Profile",
-  new mongoose.Schema({
-    name: { type: String, required: true },
-    age: { type: Number, required: true },
-    qualification: { type: String, required: true },
-    branch: { type: String, default: "" },
-    percentage: { type: Number, required: true },
-    state: { type: String, required: true },
-    category: { type: String, required: true }
-  }, { timestamps: true })
+  new mongoose.Schema(
+    {
+      name: { type: String, required: true },
+      age: { type: Number, required: true },
+      qualification: { type: String, required: true },
+      branch: { type: String, default: "" },
+      percentage: { type: Number, required: true },
+      state: { type: String, required: true },
+      category: { type: String, required: true }
+    },
+    { timestamps: true }
+  )
 );
 
 app.get("/", (req, res) => {
@@ -52,7 +65,24 @@ app.get("/", (req, res) => {
 
 app.get("/opportunity", async (req, res) => {
   try {
-    const opportunities = await Opportunity.find().sort({ lastDate: 1 });
+    const filter = {};
+
+    if (req.query.type) {
+      filter.type = req.query.type;
+    }
+
+    if (req.query.search) {
+      filter.$or = [
+        { title: { $regex: req.query.search, $options: "i" } },
+        { organization: { $regex: req.query.search, $options: "i" } },
+        { description: { $regex: req.query.search, $options: "i" } }
+      ];
+    }
+
+    const opportunities = await Opportunity.find(filter).sort({
+      lastDate: 1
+    });
+
     res.json(opportunities);
   } catch (error) {
     console.error("Load opportunities error:", error.message);
@@ -64,7 +94,13 @@ app.get("/opportunity", async (req, res) => {
 
 app.post("/opportunity", async (req, res) => {
   try {
-    const opportunity = new Opportunity(req.body);
+    const data = { ...req.body };
+
+    if (Array.isArray(data.categories) && data.categories.length > 0) {
+      data.category = data.categories[0];
+    }
+
+    const opportunity = new Opportunity(data);
     await opportunity.save();
 
     res.status(201).json({
@@ -154,18 +190,8 @@ app.post("/match", async (req, res) => {
         },
         {
           $or: [
-            {
-              state: {
-                $regex: "^" + state.trim() + "$",
-                $options: "i"
-              }
-            },
-            {
-              state: {
-                $regex: "^Other$",
-                $options: "i"
-              }
-            }
+            { state: { $regex: "^" + state.trim() + "$", $options: "i" } },
+            { state: { $regex: "^Other$", $options: "i" } }
           ]
         },
         { lastDate: { $gte: today } }
@@ -179,38 +205,43 @@ app.post("/match", async (req, res) => {
         return false;
       }
 
-      const opportunityCategory = (item.category || "")
-        .trim()
-        .toLowerCase();
-
       const userCategory = category.trim().toLowerCase();
+      const eligibleCategories =
+        item.categories && item.categories.length
+          ? item.categories
+          : [item.category || "All"];
 
-      if (
-        opportunityCategory !== userCategory &&
-        opportunityCategory !== "other" &&
-        opportunityCategory !== "all" &&
-        opportunityCategory !== "any"
-      ) {
+      const categoryMatches = eligibleCategories.some(value => {
+        const required = value.trim().toLowerCase();
+
+        return (
+          required === userCategory ||
+          ["all", "any", "other"].includes(required)
+        );
+      });
+
+      if (!categoryMatches) {
         return false;
       }
 
-      
-const requiredBranch = (item.branch || "")
-  .trim()
-  .toLowerCase();
+      const requiredBranch = (item.branch || "").trim().toLowerCase();
+      const userBranch = (branch || "").trim().toLowerCase();
 
-const userBranch = (branch || "")
-  .trim()
-  .toLowerCase();
+      const anyBranchValues = [
+        "",
+        "any",
+        "all",
+        "all branches",
+        "any branch",
+        "open to all"
+      ];
 
-const anyBranchValues = ["", "any", "all", "all branches", "any branch", "any branch", "open to all"];
-
-if (
-  !anyBranchValues.includes(requiredBranch) &&
-  requiredBranch !== userBranch
-) {
-  return false;
-}
+      if (
+        !anyBranchValues.includes(requiredBranch) &&
+        requiredBranch !== userBranch
+      ) {
+        return false;
+      }
 
       return true;
     });
@@ -218,7 +249,6 @@ if (
     res.json(matches);
   } catch (error) {
     console.error("Matching error:", error.message);
-
     res.status(500).json({
       message: "Could not find matches."
     });
